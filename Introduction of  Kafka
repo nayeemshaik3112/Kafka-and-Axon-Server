@@ -182,4 +182,59 @@ Position of consumer in a partition.
 Consumer Group:
 Group of consumers sharing load of topic consumption.
 
---------------------------------------------------------------------------
+==================== IN-SYNC REPLICA (ISR) ====================
+
+Definition:
+ISR (In-Sync Replicas) are replicas of a partition that are fully synchronized with the leader.
+
+Leader:
+- Handles all read/write operations
+
+Followers:
+- Replicate data from leader
+
+ISR:
+- Subset of replicas that are up-to-date with leader
+
+--------------------------------------------------------------
+
+Example:
+
+Partition 0:
+Leader: Broker 0
+Replicas: 0,1,3
+ISR: 0,1,3 (all in sync)
+
+If one replica lags:
+
+ISR: 0,1 (Broker 3 removed from ISR)
+
+--------------------------------------------------------------
+
+Key Points:
+
+- Only ISR replicas can become leader
+- Ensures data consistency and fault tolerance
+- Out-of-sync replicas are not used for leader election
+
+--------------------------------------------------------------
+
+Write Flow:
+
+Producer → Leader → Followers replicate → ISR acknowledges → Success
+
+--------------------------------------------------------------
+
+Important Config:
+
+acks=all → waits for all ISR replicas before success
+
+--------------------------------------------------------------
+
+Summary:
+
+ISR = fully synced replicas with leader
+Used for leader election and data safety
+
+==============================================================
+
