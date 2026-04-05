@@ -8,4 +8,38 @@ Ex: If we order the food and we can see where is the deliver partner that is thr
 4. scalable
 5. kafka runs a cluster
 
-the messages are sent by kafka are stored for days a
+the messages are sent by kafka are stored for several days
+
+Kafka Producer : Producer is the one who sends the data to Kafka cluster 
+
+Kafka Consumer : Consumer is the one who consumes the data coming from Kafka cluster
+
+Kafka Clsuter : Kafka Cluster divided into Kafka Brokers, 
+
+Zookeeper : Monitor the health of Kafka Cluster
+
+Kafka Connect : To bring the external data to the cluster from DB or my files without writing data
+It has 2 parts Source and Sink - Source - to get the data, Sink - to store the data from cluster
+
+Kafka Stream: 
+
+Start Zookeeper    :        zookeeper-server-start.bat ..\..\config\zookeeper.properties
+
+Start Kafka Broker :        kafka-server-start.bat ..\..\config\server.properties
+
+Create Topic       :        kafka-topics.bat --create --topic my-topic --bootstrap-server localhost:9092 --replication-factor 1 --partitions 3
+
+Start Producer     :        kafka-console-producer.bat --broker-list localhost:9092 --topic my-topic 
+
+Start Consumer     :        kafka-console-consumer.bat --bootstrap-server localhost:9092 --topic my-topic --from-beginning
+
+Kafka topic and Partitions
+
+Consumer OffSet and Consumer Groups
+When  a consumer group reads messages from a topic, each member of the group maintains its own offset and updates it consumes messages.
+
+__consumer_offset
+
+Consumer offset and consumer group demo
+
+Segement commit log and retention policyu
