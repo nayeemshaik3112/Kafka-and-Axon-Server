@@ -183,18 +183,3 @@ Consumer Group:
 Group of consumers sharing load of topic consumption.
 
 --------------------------------------------------------------------------
-
-14. FINAL SUMMARY
-
-Kafka = Distributed + Scalable + Event-driven system
-
-Flow:
-Producer → Topic → Partition → Broker → Consumer
-
-Tracking:
-Consumer Group + Offset (__consumer_offsets)
-
-Storage:
-Logs + Retention Policy
-
-==========================================================================
