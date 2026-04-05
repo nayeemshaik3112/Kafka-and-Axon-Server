@@ -1,45 +1,200 @@
-Kafka is a distributed streaming platform that allows produces to sends events to broker and consumers collects events from broker
-we can have n number of nodes of broker
-Ex: If we order the food and we can see where is the deliver partner that is through kafka 
+==================== KAFKA INTERVIEW PREPARATION NOTES ====================
 
-1. distributed streaming platform
-2. real time event driven application
-3. fault tolerance
-4. scalable
-5. kafka runs a cluster
+1. WHAT IS KAFKA?
 
-the messages are sent by kafka are stored for several days
+Kafka is a distributed event streaming platform used to build real-time, scalable, and fault-tolerant systems.
+It allows producers to send events, brokers to store them, and consumers to read them.
 
-Kafka Producer : Producer is the one who sends the data to Kafka cluster 
+Real-time Example:
+Food delivery / IVR system:
+Order placed → Event generated → Status updates → Consumer reads updates
 
-Kafka Consumer : Consumer is the one who consumes the data coming from Kafka cluster
+--------------------------------------------------------------------------
 
-Kafka Clsuter : Kafka Cluster divided into Kafka Brokers, 
+2. KEY FEATURES
 
-Zookeeper : Monitor the health of Kafka Cluster
+- Distributed system (runs on multiple brokers)
+- Real-time processing
+- Scalable (add brokers to scale)
+- Fault-tolerant (replication)
+- Message retention (stores data for configured time)
 
-Kafka Connect : To bring the external data to the cluster from DB or my files without writing data
-It has 2 parts Source and Sink - Source - to get the data, Sink - to store the data from cluster
+--------------------------------------------------------------------------
 
-Kafka Stream: 
+3. CORE COMPONENTS
 
-Start Zookeeper    :        zookeeper-server-start.bat ..\..\config\zookeeper.properties
+Producer:
+- Sends data (events) to Kafka
+- Example: claims-service sends CLAIM_CREATED event
 
-Start Kafka Broker :        kafka-server-start.bat ..\..\config\server.properties
+Consumer:
+- Reads data from Kafka
+- Example: notification-service consumes events
 
-Create Topic       :        kafka-topics.bat --create --topic my-topic --bootstrap-server localhost:9092 --replication-factor 1 --partitions 3
+Kafka Cluster:
+- Group of Kafka servers
 
-Start Producer     :        kafka-console-producer.bat --broker-list localhost:9092 --topic my-topic 
+Kafka Broker:
+- Single Kafka server that stores messages
 
-Start Consumer     :        kafka-console-consumer.bat --bootstrap-server localhost:9092 --topic my-topic --from-beginning
+Topic:
+- Logical channel to store messages
+- Example: claim-events
 
-Kafka topic and Partitions
+Partition:
+- Topic is divided into partitions for parallel processing
 
-Consumer OffSet and Consumer Groups
-When  a consumer group reads messages from a topic, each member of the group maintains its own offset and updates it consumes messages.
+Relationship:
+Cluster → Brokers → Topics → Partitions → Messages
 
-__consumer_offset
+--------------------------------------------------------------------------
 
-Consumer offset and consumer group demo
+4. END-TO-END FLOW
 
-Segement commit log and retention policyu
+Producer → Topic → Partition → Broker → Consumer
+
+IVR Flow:
+User Call → IVR Service → Kafka Topic → Partition → Broker → Notification Service
+
+--------------------------------------------------------------------------
+
+5. ZOOKEEPER
+
+- Manages Kafka cluster
+- Handles broker coordination, leader election, health monitoring
+- Acts as cluster manager
+
+--------------------------------------------------------------------------
+
+6. KAFKA CONNECT
+
+Used to integrate external systems without coding
+
+Source:
+- Reads data from DB/file → Kafka
+
+Sink:
+- Writes data from Kafka → DB/file
+
+--------------------------------------------------------------------------
+
+7. KAFKA STREAMS
+
+- Used for processing data inside Kafka
+- Enables real-time transformations
+
+--------------------------------------------------------------------------
+
+8. CONSUMER GROUP & OFFSET
+
+Consumer Group:
+- Group of consumers reading same topic
+- One partition is assigned to one consumer
+
+Offset:
+- Position of consumer in partition
+- Represents last read message
+
+__consumer_offsets:
+- Internal Kafka topic
+- Stores offset of each consumer group
+- Used to track progress and resume consumption
+
+Consumer Flow:
+1. Consumer joins group
+2. Group coordinator assigns partitions
+3. Consumer reads messages
+4. Offset is updated
+
+Sticky Assignment:
+- Consumer continues reading same partition unless rebalance occurs
+
+--------------------------------------------------------------------------
+
+9. LOG STORAGE
+
+Kafka stores messages as logs:
+
+Example:
+000000.log
+
+- Each partition has its own log file
+- Append-only (no updates)
+
+--------------------------------------------------------------------------
+
+10. RETENTION POLICY
+
+Controls how long messages are stored
+
+Time-based:
+- Example: 7 days
+
+Size-based:
+- Example: 1GB
+
+Log Cleaner:
+- Automatically deletes old data
+
+--------------------------------------------------------------------------
+
+11. KAFKA COMMANDS
+
+Start Zookeeper:
+zookeeper-server-start.bat ..\..\config\zookeeper.properties
+
+Start Kafka Broker:
+kafka-server-start.bat ..\..\config\server.properties
+
+Create Topic:
+kafka-topics.bat --create --topic my-topic --bootstrap-server localhost:9092 --replication-factor 1 --partitions 3
+
+Start Producer:
+kafka-console-producer.bat --broker-list localhost:9092 --topic my-topic
+
+Start Consumer:
+kafka-console-consumer.bat --bootstrap-server localhost:9092 --topic my-topic --from-beginning
+
+--------------------------------------------------------------------------
+
+12. BROKER CLUSTER SETUP
+
+- Multiple brokers can be created
+- Each broker runs on different ports
+- Ports must be unique
+
+--------------------------------------------------------------------------
+
+13. INTERVIEW ONE-LINERS
+
+Kafka:
+Kafka is a distributed event streaming platform for real-time, scalable, and fault-tolerant systems.
+
+Topic:
+A logical channel where messages are stored.
+
+Partition:
+Unit of parallelism in Kafka.
+
+Offset:
+Position of consumer in a partition.
+
+Consumer Group:
+Group of consumers sharing load of topic consumption.
+
+--------------------------------------------------------------------------
+
+14. FINAL SUMMARY
+
+Kafka = Distributed + Scalable + Event-driven system
+
+Flow:
+Producer → Topic → Partition → Broker → Consumer
+
+Tracking:
+Consumer Group + Offset (__consumer_offsets)
+
+Storage:
+Logs + Retention Policy
+
+==========================================================================
