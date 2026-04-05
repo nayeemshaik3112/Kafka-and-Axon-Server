@@ -1,0 +1,11 @@
+Kafka is a distributed streaming platform that allows produces to sends events to broker and consumers collects events from broker
+we can have n number of nodes of broker
+Ex: If we order the food and we can see where is the deliver partner that is through kafka 
+
+1. distributed streaming platform
+2. real time event driven application
+3. fault tolerance
+4. scalable
+5. kafka runs a cluster
+
+the messages are sent by kafka are stored for days a
