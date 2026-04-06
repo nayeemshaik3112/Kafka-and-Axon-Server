@@ -16,7 +16,7 @@ Uses: Optimized read models (DTOs / projections)
 Fast queries (can use separate DB)
 
 Problem	CQRS                Solution
------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Heavy read traffic	        Separate read DB (scale independently)
 Complex business logic	    Isolate in command side
 Performance issues	        Optimize read separately
@@ -95,123 +95,123 @@ public class Product {
     }
 }
 
-# 🧠 CQRS + Axon Framework — Notes (Copy Mode)
+#  CQRS + Axon Framework — Notes (Copy Mode)
 
----
+----------------------------------------------------------------
 
-## 🟥 1. Aggregate
+1. Aggregate
 
-**Definition:**
+Definition:
 Aggregate is a domain object that enforces business rules and acts as a consistency boundary in CQRS.
 
-**Key Points:**
+Key Points:
 
-* Represents **Command Side (Write Model)**
+* Represents Command Side (Write Model)
 * Handles commands via `@CommandHandler`
 * Emits events using `apply()`
 * State is NOT directly modified here
 * State is rebuilt using events
 
----
+----------------------------------------------------------------
 
-## 🟥 2. @AggregateIdentifier
+2. @AggregateIdentifier
 
-**Definition:**
+Definition:
 Unique identifier for an Aggregate.
 
-**Key Points:**
+Key Points:
 
 * Used by Axon to route commands to correct aggregate instance
 * Mandatory for every aggregate
 * Example: `private String id;`
 
----
+----------------------------------------------------------------
 
-## 🟥 3. Command
+3. Command
 
-**Definition:**
-A command represents an **intent to change state**.
+Definition:
+A command represents an intent to change state.
 
-**Examples:**
+Examples:
 
 * AddProductCommand
 * UpdateStockCommand
 
-**Key Points:**
+Key Points:
 
 * Immutable object
 * Contains required data for action
 * Goes through CommandGateway
 
----
+----------------------------------------------------------------
 
-## 🟥 4. CommandHandler
+4. CommandHandler
 
-**Definition:**
+Definition:
 Handles commands, validates business logic, and decides whether to generate events.
 
-**Key Points:**
+Key Points:
 
 * Annotated with `@CommandHandler`
 * Can be constructor (for create) or method (for update)
 * Does NOT update state directly
 * Calls `apply()` to emit events
 
-**Flow:**
+Flow:
 Command → CommandHandler → Validation → apply(Event)
 
----
+----------------------------------------------------------------
 
-## 🟥 5. apply() Method
+5. apply() Method
 
-**Definition:**
+Definition:
 Used to publish an event in Axon.
 
-**Key Points:**
+Key Points:
 
 * Stores event in Event Store
 * Triggers EventSourcingHandler
 * Does NOT update state directly
 
----
+----------------------------------------------------------------
 
-## 🟥 6. Event
+6. Event
 
-**Definition:**
-An event represents a **fact that already happened**.
+Definition:
+An event represents a fact that already happened.
 
-**Examples:**
+Examples:
 
 * ProductAddedEvent
 * StockUpdatedEvent
 
-**Key Points:**
+Key Points:
 
 * Immutable
 * Source of truth in Event Sourcing
 * Used to rebuild state
 
----
+----------------------------------------------------------------
 
-## 🟥 7. Event Sourcing
+7. Event Sourcing
 
-**Definition:**
-Instead of storing current state, system stores **sequence of events**.
+Definition:
+Instead of storing current state, system stores sequence of events.
 
-**Key Points:**
+Key Points:
 
 * State = Derived from events
 * Events are persisted in Event Store
 * Enables replay, audit, debugging
 
----
+----------------------------------------------------------------
 
-## 🟥 8. EventSourcingHandler
+8. EventSourcingHandler
 
-**Definition:**
+Definition:
 Updates aggregate state based on events.
 
-**Key Points:**
+Key Points:
 
 * Annotated with `@EventSourcingHandler`
 * ONLY place where state is updated
@@ -221,11 +221,11 @@ Updates aggregate state based on events.
   * Event replay
   * Aggregate reconstruction
 
----
+----------------------------------------------------------------
 
-## 🟥 9. Command Side Flow
+9. Command Side Flow
 
-**Complete Flow:**
+Complete Flow:
 
 Client → Controller → CommandGateway
 → CommandHandler (Aggregate)
@@ -234,18 +234,18 @@ Client → Controller → CommandGateway
 → EventSourcingHandler
 → State Updated
 
----
+----------------------------------------------------------------
 
-## 🟥 10. Business Logic Rule
+10. Business Logic Rule
 
-**Golden Rule:**
+Golden Rule:
 
 * CommandHandler = Decision maker
 * EventSourcingHandler = State updater
 
----
+----------------------------------------------------------------
 
-## 🟥 11. Example Flow (Add Product)
+11. Example Flow (Add Product)
 
 AddProductCommand
 → CommandHandler (Constructor)
@@ -254,9 +254,9 @@ AddProductCommand
 → EventSourcingHandler
 → Product Created
 
----
+----------------------------------------------------------------
 
-## 🟥 12. Example Flow (Update Stock)
+12. Example Flow (Update Stock)
 
 UpdateStockCommand
 → CommandHandler
@@ -266,20 +266,19 @@ UpdateStockCommand
 → EventSourcingHandler
 → Stock Updated
 
----
+----------------------------------------------------------------
 
-## 🟥 13. Important Differences
+13. Important Differences
 
 | Concept              | Responsibility    |
-| -------------------- | ----------------- |
 | CommandHandler       | Validate + Decide |
 | apply()              | Publish Event     |
 | EventSourcingHandler | Update State      |
 | Aggregate            | Business Rules    |
 
----
+----------------------------------------------------------------
 
-## 🟥 14. Important Rules
+14. Important Rules
 
 * Never update state inside CommandHandler
 * Always use events to change state
@@ -287,15 +286,15 @@ UpdateStockCommand
 * Events are source of truth
 * State is derived from events
 
----
+----------------------------------------------------------------
 
-## 🟥 15. One-Line Interview Summary
+15. One-Line Interview Summary
 
 “In Axon CQRS, CommandHandlers decide what should happen, and EventSourcingHandlers update the state based on events.”
 
----
+----------------------------------------------------------------
 
-## 🟥 16. Your Product Aggregate Understanding
+16. Your Product Aggregate Understanding
 
 * Product Aggregate = Business logic layer
 * AddProductCommand → creates product
@@ -303,9 +302,9 @@ UpdateStockCommand
 * apply() → publishes event
 * EventSourcingHandler → updates fields
 
----
+----------------------------------------------------------------
 
-## 🟥 17. Key Mental Model
+17. Key Mental Model
 
 Command → Decision → Event → State Change
 
@@ -313,9 +312,9 @@ NOT
 
 Command → Direct State Change
 
----
+----------------------------------------------------------------
 
-## 🟥 18. Why CQRS + Axon?
+18. Why CQRS + Axon?
 
 * Separation of concerns (Read vs Write)
 * Scalable architecture
@@ -323,16 +322,16 @@ Command → Direct State Change
 * Better audit/history
 * High performance read/write separation
 
----
+----------------------------------------------------------------
 
-## 🟥 19. What’s Next?
+19. What’s Next?
 
 * Query Side (Read Model)
 * Projection (Event → Read DB)
 * QueryHandler
 * End-to-End Flow
 
------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 data class CreateOrderCommand (
         @TargetAggregateIdentifier
