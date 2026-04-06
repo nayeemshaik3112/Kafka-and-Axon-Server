@@ -1,0 +1,345 @@
+CQRS - Command Query Resposibility Segregation
+
+Example: Amazon browsing
+
+Command Side (WRITE):
+
+Handles: Create, Update, Delete
+Uses: Command objects
+Logic: Business rules, validation
+Output: Often emits events
+
+Query Side (READ):
+
+Handles: Fetch data
+Uses: Optimized read models (DTOs / projections)
+Fast queries (can use separate DB)
+
+Problem	CQRS                Solution
+-----------------------------------------------------------------
+Heavy read traffic	        Separate read DB (scale independently)
+Complex business logic	    Isolate in command side
+Performance issues	        Optimize read separately
+Event-driven systems	    Works perfectly with Kafka
+
+Often used together:
+
+CQRS → separates read/write
+Event Sourcing → stores events instead of state
+
+With CQRS
+
+👉 Command side:
+
+POST /projects → CreateProjectCommand
+
+👉 Event:
+
+ProjectCreatedEvent
+
+👉 Query side:
+
+GET /projects → fetch from optimized read table
+
+CQRS is an architectural pattern where we separate write operations (commands) from read operations (queries). 
+Commands modify the state and often produce events, while queries fetch data from optimized read models. 
+This helps in scaling read and write independently and is commonly used with event-driven architectures like Kafka or frameworks like Axon.
+
+@Aggregate
+public class Product {
+    @AggregateIdentifier
+    private String id;
+    private Double price;
+    private Integer stock;
+    private String description;
+
+    public Product() {
+    }
+
+    @CommandHandler
+    public Product(AddProductCommand cmd){
+        apply( new ProductAddedEvent(
+                cmd.getId(),
+                cmd.getPrice(),
+                cmd.getStock(),
+                cmd.getDescription()
+                )
+        );
+    }
+
+    @CommandHandler
+    public void handle(UpdateStockCommand cmd){
+        if(this.stock >= cmd.getStock()){
+            apply(new StockUpdatedEvent(
+                    cmd.getId(), 
+                    cmd.getStock())
+            );
+        }
+        else {
+            throw new RuntimeException("Out of Stock!");
+        }
+    }
+
+    @EventSourcingHandler
+    public void on(StockUpdatedEvent evt){
+        id = evt.getId();
+        stock = stock - evt.getStock();
+    }
+
+    @EventSourcingHandler
+    public void on(ProductAddedEvent evt){
+        id = evt.getId();
+        price = evt.getPrice();
+        stock = evt.getStock();
+        description = evt.getDescription();
+    }
+}
+
+# 🧠 CQRS + Axon Framework — Notes (Copy Mode)
+
+---
+
+## 🟥 1. Aggregate
+
+**Definition:**
+Aggregate is a domain object that enforces business rules and acts as a consistency boundary in CQRS.
+
+**Key Points:**
+
+* Represents **Command Side (Write Model)**
+* Handles commands via `@CommandHandler`
+* Emits events using `apply()`
+* State is NOT directly modified here
+* State is rebuilt using events
+
+---
+
+## 🟥 2. @AggregateIdentifier
+
+**Definition:**
+Unique identifier for an Aggregate.
+
+**Key Points:**
+
+* Used by Axon to route commands to correct aggregate instance
+* Mandatory for every aggregate
+* Example: `private String id;`
+
+---
+
+## 🟥 3. Command
+
+**Definition:**
+A command represents an **intent to change state**.
+
+**Examples:**
+
+* AddProductCommand
+* UpdateStockCommand
+
+**Key Points:**
+
+* Immutable object
+* Contains required data for action
+* Goes through CommandGateway
+
+---
+
+## 🟥 4. CommandHandler
+
+**Definition:**
+Handles commands, validates business logic, and decides whether to generate events.
+
+**Key Points:**
+
+* Annotated with `@CommandHandler`
+* Can be constructor (for create) or method (for update)
+* Does NOT update state directly
+* Calls `apply()` to emit events
+
+**Flow:**
+Command → CommandHandler → Validation → apply(Event)
+
+---
+
+## 🟥 5. apply() Method
+
+**Definition:**
+Used to publish an event in Axon.
+
+**Key Points:**
+
+* Stores event in Event Store
+* Triggers EventSourcingHandler
+* Does NOT update state directly
+
+---
+
+## 🟥 6. Event
+
+**Definition:**
+An event represents a **fact that already happened**.
+
+**Examples:**
+
+* ProductAddedEvent
+* StockUpdatedEvent
+
+**Key Points:**
+
+* Immutable
+* Source of truth in Event Sourcing
+* Used to rebuild state
+
+---
+
+## 🟥 7. Event Sourcing
+
+**Definition:**
+Instead of storing current state, system stores **sequence of events**.
+
+**Key Points:**
+
+* State = Derived from events
+* Events are persisted in Event Store
+* Enables replay, audit, debugging
+
+---
+
+## 🟥 8. EventSourcingHandler
+
+**Definition:**
+Updates aggregate state based on events.
+
+**Key Points:**
+
+* Annotated with `@EventSourcingHandler`
+* ONLY place where state is updated
+* No business logic here
+* Used during:
+
+  * Event replay
+  * Aggregate reconstruction
+
+---
+
+## 🟥 9. Command Side Flow
+
+**Complete Flow:**
+
+Client → Controller → CommandGateway
+→ CommandHandler (Aggregate)
+→ apply(Event)
+→ Event Store (Write DB)
+→ EventSourcingHandler
+→ State Updated
+
+---
+
+## 🟥 10. Business Logic Rule
+
+**Golden Rule:**
+
+* CommandHandler = Decision maker
+* EventSourcingHandler = State updater
+
+---
+
+## 🟥 11. Example Flow (Add Product)
+
+AddProductCommand
+→ CommandHandler (Constructor)
+→ apply(ProductAddedEvent)
+→ Event Stored
+→ EventSourcingHandler
+→ Product Created
+
+---
+
+## 🟥 12. Example Flow (Update Stock)
+
+UpdateStockCommand
+→ CommandHandler
+→ Validate stock
+→ apply(StockUpdatedEvent)
+→ Event Stored
+→ EventSourcingHandler
+→ Stock Updated
+
+---
+
+## 🟥 13. Important Differences
+
+| Concept              | Responsibility    |
+| -------------------- | ----------------- |
+| CommandHandler       | Validate + Decide |
+| apply()              | Publish Event     |
+| EventSourcingHandler | Update State      |
+| Aggregate            | Business Rules    |
+
+---
+
+## 🟥 14. Important Rules
+
+* Never update state inside CommandHandler
+* Always use events to change state
+* Aggregate should enforce business rules
+* Events are source of truth
+* State is derived from events
+
+---
+
+## 🟥 15. One-Line Interview Summary
+
+“In Axon CQRS, CommandHandlers decide what should happen, and EventSourcingHandlers update the state based on events.”
+
+---
+
+## 🟥 16. Your Product Aggregate Understanding
+
+* Product Aggregate = Business logic layer
+* AddProductCommand → creates product
+* UpdateStockCommand → reduces stock
+* apply() → publishes event
+* EventSourcingHandler → updates fields
+
+---
+
+## 🟥 17. Key Mental Model
+
+Command → Decision → Event → State Change
+
+NOT
+
+Command → Direct State Change
+
+---
+
+## 🟥 18. Why CQRS + Axon?
+
+* Separation of concerns (Read vs Write)
+* Scalable architecture
+* Event-driven system
+* Better audit/history
+* High performance read/write separation
+
+---
+
+## 🟥 19. What’s Next?
+
+* Query Side (Read Model)
+* Projection (Event → Read DB)
+* QueryHandler
+* End-to-End Flow
+
+-----------------------------------------------------------------------------------------------------
+
+data class CreateOrderCommand (
+        @TargetAggregateIdentifier
+        val orderId: String,
+        val price: Double,
+        val number:Int,
+        val productId:String
+)
+
+
