@@ -229,12 +229,5 @@ Important Config:
 
 acks=all → waits for all ISR replicas before success
 
---------------------------------------------------------------
-
-Summary:
-
-ISR = fully synced replicas with leader
-Used for leader election and data safety
-
-==============================================================
-
+----------------------------------------------------------------------------------------------------------------------------------
+IVR Project - Kafka flow

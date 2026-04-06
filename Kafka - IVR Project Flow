@@ -1,0 +1,342 @@
+==================== KAFKA FLOW – IVR SYSTEM (COMPLETE END-TO-END) ====================
+
+SYSTEM CONTEXT
+
+Microservices:
+- api-gateway
+- ivr-orchestrator-service
+- customer-service
+- policy-service
+- claims-service (Kafka Producer)
+- notification-service (Kafka Consumer)
+
+Kafka is used ONLY between:
+claims-service → notification-service
+
+Kafka is NOT used for:
+- customer lookup
+- policy retrieval
+- orchestrator communication
+
+
+=======================================================================================
+
+ENTRY FLOW (SYNCHRONOUS PART)
+
+1. User initiates IVR request
+2. API Gateway receives request
+3. API Gateway routes to ivr-orchestrator-service
+4. Orchestrator performs synchronous calls:
+   - customer-service (fetch customer details)
+   - policy-service (fetch policy details)
+   - claims-service (create/update claim)
+
+At this point, Kafka is NOT involved
+
+
+=======================================================================================
+
+KAFKA ENTRY POINT (TRANSITION FROM SYNC → ASYNC)
+
+Kafka starts ONLY AFTER:
+- claims-service completes business logic
+- an event needs to be emitted (side-effect)
+
+Trigger events:
+- CLAIM_CREATED
+- CLAIM_STATUS_UPDATED
+
+
+=======================================================================================
+
+EVENT GENERATION (CLAIMS-SERVICE)
+
+Flow inside claims-service:
+
+1. Request received from orchestrator
+2. Business logic executes (claim creation/update)
+3. System prepares event payload
+
+Event structure:
+- eventType (CLAIM_CREATED / CLAIM_STATUS_UPDATED)
+- claimId
+- customerId
+- status
+
+4. Event handed over to Kafka Producer
+
+
+=======================================================================================
+
+PRODUCER FLOW (CLAIMS-SERVICE → KAFKA)
+
+1. Producer sends message to Kafka topic
+
+Topic:
+- claims-events
+
+Key:
+- claimId
+
+2. Kafka determines partition using key
+
+Partition strategy:
+- Same claimId → same partition
+- Ensures ordering per claim
+
+Example:
+- claimId=123 → Partition 1
+- claimId=456 → Partition 2
+
+
+=======================================================================================
+
+MESSAGE STORAGE IN KAFKA
+
+Kafka stores messages as:
+
+Topic: claims-events
+Partitions: multiple
+Offsets: sequential per partition
+
+Example:
+
+Partition 1:
+Offset 0 → CLAIM_CREATED
+Offset 1 → CLAIM_STATUS_UPDATED
+
+Partition 2:
+Offset 0 → CLAIM_CREATED
+
+
+=======================================================================================
+
+CONSUMER ENTRY (NOTIFICATION-SERVICE)
+
+Consumer subscribes to:
+
+- Topic: claims-events
+- Consumer Group: notification-group
+
+
+=======================================================================================
+
+CONSUMER GROUP BEHAVIOR
+
+If multiple instances exist:
+
+- Instance 1 → Partition 0
+- Instance 2 → Partition 1
+- Instance 3 → Partition 2
+
+Rule:
+- One partition is consumed by only one consumer within a group
+
+Scaling:
+- Increase partitions → increase parallel processing
+- Increase consumers → distribute load
+
+
+=======================================================================================
+
+MESSAGE CONSUMPTION FLOW
+
+1. Consumer polls message from Kafka
+2. Reads event payload
+3. Identifies eventType
+
+Routing logic:
+
+- CLAIM_CREATED → trigger SMS notification
+- CLAIM_STATUS_UPDATED → trigger Email notification
+
+
+=======================================================================================
+
+OFFSET MANAGEMENT (CRITICAL)
+
+Offset = position of message in partition
+
+Configuration:
+- enable.auto.commit = false (manual commit)
+
+Flow:
+
+1. Consumer reads message at offset X
+2. Processes message (notification logic)
+3. If success → commit offset
+4. If failure → do NOT commit
+
+
+=======================================================================================
+
+SUCCESS FLOW
+
+- Message read
+- Notification sent successfully
+- Offset committed
+
+Result:
+- Kafka marks message as processed
+- Message will NOT be re-delivered
+
+
+=======================================================================================
+
+FAILURE FLOW
+
+CASE 1: Failure BEFORE offset commit
+
+- Message read
+- Processing fails
+- Offset NOT committed
+
+Result:
+- Kafka re-delivers same message
+- No data loss
+- Possible duplicate processing
+
+
+CASE 2: Failure AFTER offset commit (BAD DESIGN)
+
+- Offset committed early
+- Processing fails
+
+Result:
+- Message lost permanently
+- Data inconsistency
+
+
+=======================================================================================
+
+IDEMPOTENCY HANDLING
+
+Problem:
+- Same event may be processed multiple times
+
+Solution:
+
+- Use unique key:
+  claimId + eventType
+
+- Maintain processed_events store
+
+Flow:
+
+1. Before processing → check if event already processed
+2. If yes → skip
+3. If no → process and store record
+
+
+=======================================================================================
+
+RETRY MECHANISM
+
+On failure:
+
+1. Consumer retries processing (configured attempts)
+2. Retry can be immediate or with backoff
+3. If success → commit offset
+4. If still fails → move to DLQ
+
+
+=======================================================================================
+
+DEAD LETTER QUEUE (DLQ)
+
+DLQ Topic:
+- claims-events-dlq
+
+Usage:
+- Store failed messages after retries
+
+Purpose:
+- Debugging
+- Manual reprocessing
+- Failure analysis
+
+
+=======================================================================================
+
+REBALANCING SCENARIO
+
+Triggered when:
+- New consumer instance joins
+- Existing consumer crashes
+
+Effect:
+- Kafka redistributes partitions among consumers
+
+Impact:
+- Temporary pause in consumption
+- Possible duplicate processing
+
+Handled by:
+- Idempotency logic
+
+
+=======================================================================================
+
+END-TO-END COMPLETE FLOW
+
+User Call
+   ↓
+API Gateway
+   ↓
+IVR Orchestrator
+   ↓
+Claims Service
+   ↓
+Business Logic Execution
+   ↓
+Event Creation (CLAIM_CREATED / CLAIM_STATUS_UPDATED)
+   ↓
+Kafka Producer (claims-service)
+   ↓
+Kafka Topic (claims-events)
+   ↓
+Partition (based on claimId)
+   ↓
+Offset assigned
+   ↓
+Kafka Consumer (notification-service)
+   ↓
+Event Processing
+   ↓
+Notification Sent (SMS / Email)
+   ↓
+Offset Commit
+
+
+=======================================================================================
+
+ARCHITECTURE SUMMARY
+
+Synchronous Layer:
+- API Gateway → Orchestrator → Customer/Policy/Claims
+
+Asynchronous Layer:
+- Claims Service → Kafka → Notification Service
+
+Kafka Responsibilities:
+- Event buffering
+- Decoupling services
+- Reliable message delivery
+- Retry and failure handling
+- Scalability via partitions and consumer groups
+
+
+=======================================================================================
+
+KEY DESIGN PRINCIPLES
+
+- Event-driven architecture
+- Loose coupling
+- Asynchronous processing
+- Partition-based ordering (via claimId)
+- Consumer group scalability
+- Manual offset control
+- Retry + DLQ for fault tolerance
+- Idempotency for duplicate handling
+
+=======================================================================================
